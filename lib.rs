@@ -12,7 +12,7 @@ mod bugbite_presale {
     pub struct Token{
         owner: AccountId,
         price_per_token: Balance,
-        PresaleAsset: AccountId
+        presale_asset: AccountId
     }
 
 
@@ -21,7 +21,7 @@ mod bugbite_presale {
         #[ink(constructor)]
         pub fn new(price_per_token: Balance, presale_token: AccountId) -> Self{
             let caller = Self::env().caller();
-            Self { price_per_token,owner: caller,  PresaleAsset: presale_token }
+            Self { price_per_token,owner: caller,  presale_asset: presale_token }
         }
 
         #[ink(message)]
@@ -42,7 +42,7 @@ mod bugbite_presale {
             let transferred_value = self.env().transferred_value();
             assert_eq!(transferred_value, price);
             Self::env().transfer(self.owner, transferred_value);
-            let mut token: contract_ref!(PSP22) = self.PresaleAsset.into();
+            let mut token: contract_ref!(PSP22) = self.presale_asset.into();
             let to_balance_before = token.balance_of(from);
             // let _ = token.transfer_from(self.owner, Self::env().account_id(), price, Vec::<u8>::new());
             let _ = token.transfer(from, price,  Vec::<u8>::new());
@@ -50,6 +50,14 @@ mod bugbite_presale {
             let new_balance = to_balance - to_balance_before;
             assert_eq!(new_balance, price);
             new_balance
+        }
+
+        #[ink(message, payable)]
+        pub fn claim_tokens(&mut self, amount_tokens: Balance) -> Balance{
+            assert_eq!(self.env().caller(), self.owner);
+            let mut token: contract_ref!(PSP22) = self.presale_asset.into();
+            let _ = token.transfer(self.owner, amount_tokens,  Vec::<u8>::new());
+            amount_tokens
         }
     }
 
