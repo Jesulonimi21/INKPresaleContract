@@ -52,7 +52,7 @@ mod bugbite_presale {
             new_balance
         }
 
-        #[ink(message, payable)]
+        #[ink(message)]
         pub fn claim_tokens(&mut self, amount_tokens: Balance) -> Balance{
             assert_eq!(self.env().caller(), self.owner);
             let mut token: contract_ref!(PSP22) = self.presale_asset.into();
