@@ -12,7 +12,6 @@ mod bugbite_presale {
     pub struct Token{
         owner: AccountId,
         price_per_token: Balance,
-        supply_remaining: Balance,
         PresaleAsset: AccountId
     }
 
@@ -20,14 +19,9 @@ mod bugbite_presale {
 
     impl Token{
         #[ink(constructor)]
-        pub fn new(supply_remaining: Balance, price_per_token: Balance, presale_token: AccountId) -> Self{
+        pub fn new(price_per_token: Balance, presale_token: AccountId) -> Self{
             let caller = Self::env().caller();
-            Self { price_per_token, supply_remaining, owner: caller,  PresaleAsset: presale_token }
-        }
-
-        #[ink(message)]
-        pub fn supply_remaining(&self) -> u128 {
-            self.supply_remaining
+            Self { price_per_token,owner: caller,  PresaleAsset: presale_token }
         }
 
         #[ink(message)]
@@ -52,7 +46,6 @@ mod bugbite_presale {
             let to_balance_before = token.balance_of(from);
             // let _ = token.transfer_from(self.owner, Self::env().account_id(), price, Vec::<u8>::new());
             let _ = token.transfer(from, price,  Vec::<u8>::new());
-            self.supply_remaining = self.supply_remaining - amount_to_purchase;
             let to_balance = token.balance_of(from);
             let new_balance = to_balance - to_balance_before;
             assert_eq!(new_balance, price);
