@@ -49,11 +49,14 @@ mod bugbite_presale {
             assert_eq!(transferred_value, price);
             Self::env().transfer(self.owner, transferred_value);
             let mut token: contract_ref!(PSP22) = self.PresaleAsset.into();
-            let _ = token.transfer_from(self.owner, Self::env().account_id(), price, Vec::<u8>::new());
+            let to_balance_before = token.balance_of(from);
+            // let _ = token.transfer_from(self.owner, Self::env().account_id(), price, Vec::<u8>::new());
             let _ = token.transfer(from, price,  Vec::<u8>::new());
             self.supply_remaining = self.supply_remaining - amount_to_purchase;
             let to_balance = token.balance_of(from);
-            to_balance
+            let new_balance = to_balance - to_balance_before;
+            assert_eq!(new_balance, price);
+            new_balance
         }
     }
 
