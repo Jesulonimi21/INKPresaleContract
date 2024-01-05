@@ -34,7 +34,8 @@ mod bugbite_presale {
             self.price_per_token
         }
 
-
+//TODO: Add events
+//TODO: Allow adding arbitrary amount and contract giving change
         #[ink(message, payable)]
         pub fn buy_token(&mut self, amount_to_purchase: Balance) -> Balance{
             let from = self.env().caller();
