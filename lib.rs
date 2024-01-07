@@ -15,11 +15,19 @@ mod bugbite_presale {
         presale_asset: AccountId
     }
 
+    #[ink(event)]
+    pub struct Purchased {
+        from: AccountId,
+        value: Balance,
+        price: Balance
+    }
+
 
 
     impl Token{
         #[ink(constructor)]
         pub fn new(price_per_token: Balance, presale_token: AccountId) -> Self{
+            assert!(price_per_token > 0);
             let caller = Self::env().caller();
             Self { price_per_token,owner: caller,  presale_asset: presale_token }
         }
@@ -34,15 +42,14 @@ mod bugbite_presale {
             self.price_per_token
         }
 
-//TODO: Add events
-//TODO: Allow adding arbitrary amount and contract giving change
         #[ink(message, payable)]
         pub fn buy_token(&mut self, amount_to_purchase: Balance) -> Balance{
+            assert!(amount_to_purchase > 0);
             let from = self.env().caller();
-            let price: Balance = (amount_to_purchase * self.price_per_token)/1000000000000;
+            let price: Balance = (amount_to_purchase * self.price_per_token)/1000_000_000_000;
             let transferred_value = self.env().transferred_value();
-            assert_eq!(transferred_value, price);
-            Self::env().transfer(self.owner, transferred_value);
+            assert!(transferred_value >= price);
+            Self::env().transfer(self.owner, price).expect("Could not send native tokens to the owner");
             let mut token: contract_ref!(PSP22) = self.presale_asset.into();
             let to_balance_before = token.balance_of(from);
             // let _ = token.transfer_from(self.owner, Self::env().account_id(), price, Vec::<u8>::new());
@@ -50,6 +57,12 @@ mod bugbite_presale {
             let to_balance = token.balance_of(from);
             let new_balance = to_balance - to_balance_before;
             assert_eq!(new_balance, price);
+            if transferred_value > price {
+                Self::env().transfer(from, transferred_value - price).expect("could not transfer excess price sent by user");
+            };
+            Self::env().emit_event(Purchased{
+                from, value: amount_to_purchase, price
+            });
             new_balance
         }
 
@@ -59,6 +72,14 @@ mod bugbite_presale {
             let mut token: contract_ref!(PSP22) = self.presale_asset.into();
             let _ = token.transfer(self.owner, amount_tokens,  Vec::<u8>::new());
             amount_tokens
+        }
+
+        #[ink(message, payable)]
+        pub fn claim_native_token(&mut self)  -> Balance {
+            let contract_balance = Self::env().balance();
+            assert_eq!(self.env().caller(), self.owner);
+            Self::env().transfer(self.owner, contract_balance).expect("could not send tokens to the owner");
+            contract_balance
         }
     }
 
