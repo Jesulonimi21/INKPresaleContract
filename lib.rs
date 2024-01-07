@@ -81,6 +81,17 @@ mod bugbite_presale {
             Self::env().transfer(self.owner, contract_balance).expect("could not send tokens to the owner");
             contract_balance
         }
+
+        #[ink(message)]
+        pub fn set_code(&mut self, code_hash: [u8; 32]) {
+            ink::env::set_code_hash(&code_hash).unwrap_or_else(|err| {
+                panic!(
+                    "Failed to `set_code_hash` to {:?} due to {:?}",
+                    code_hash, err
+                )
+            });
+            ink::env::debug_println!("Switched code hash to {:?}.", code_hash);
+        }
     }
 
     
