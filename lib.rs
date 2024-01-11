@@ -2,17 +2,29 @@
 
 #[ink::contract]
 mod bugbite_presale {
-    use ink::contract_ref;
+    use ink::storage::Mapping;
+    use ink::{contract_ref};
     use ink::prelude::vec::Vec;
     use psp22::PSP22;
- 
+
+      // #[derive(Default)]X/
+
+      #[derive(Clone, Debug, scale::Encode, scale::Decode)]
+      #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
+    pub struct Purchase {
+        buyer: AccountId,
+        amount_purchased: Balance, 
+    }
+
 
     #[ink(storage)]
     // #[derive(Default)]X/
     pub struct Token{
         owner: AccountId,
         price_per_token: Balance,
-        presale_asset: AccountId
+        presale_asset: AccountId,
+        all_sales: Vec<Purchase>,
+        all_sales_map: Mapping<AccountId, Purchase>
     }
 
     #[ink(event)]
@@ -29,7 +41,7 @@ mod bugbite_presale {
         pub fn new(price_per_token: Balance, presale_token: AccountId) -> Self{
             assert!(price_per_token > 0, "price per token must be greater than zero");
             let caller = Self::env().caller();
-            Self { price_per_token,owner: caller,  presale_asset: presale_token }
+            Self { price_per_token,owner: caller,  presale_asset: presale_token, all_sales: Vec::new(), all_sales_map: Default::default() }
         }
 
         #[ink(message)]
@@ -41,6 +53,26 @@ mod bugbite_presale {
         pub fn get_price(&self) -> u128{
             self.price_per_token
         }
+
+        #[ink(message)]
+        pub fn get_sale(&self, index: u128) -> Purchase{
+            self.all_sales[index as usize].clone()
+        }
+
+        #[ink(message)]
+        pub fn get_sale_length(&self) -> u128{
+            self.all_sales.len() as u128
+        }
+
+        #[ink(message)]
+        pub fn get_sale_for_user (&self, account: AccountId) -> Option<Purchase>{
+            self.all_sales_map.get(account)
+        }
+
+
+ 
+
+
 
         #[ink(message, payable)]
         pub fn buy_token(&mut self, amount_to_purchase: Balance) -> Balance{
@@ -63,6 +95,21 @@ mod bugbite_presale {
             Self::env().emit_event(Purchased{
                 from, value: amount_to_purchase, price
             });
+            match self.get_sale_for_user(from){
+                None => {self.all_sales_map.insert(from, &Purchase{
+                    buyer: from,
+                    amount_purchased: amount_to_purchase
+                });},
+                Some(sale) => {self.all_sales_map.insert(from, &Purchase{
+                    buyer: from,
+                    amount_purchased: sale.amount_purchased + amount_to_purchase
+                });}
+            };
+            let purchase_info = Purchase{
+                buyer: from,
+                amount_purchased: amount_to_purchase
+            };
+            self.all_sales.push(purchase_info);
             new_balance
         }
 
