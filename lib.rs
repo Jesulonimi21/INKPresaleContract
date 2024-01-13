@@ -1,7 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
 #[ink::contract]
-mod bugbite_presale {
+pub mod bugbite_presale {
+
+   
+
+
     use ink::storage::Mapping;
     use ink::{contract_ref};
     use ink::prelude::vec::Vec;
@@ -144,3 +148,4 @@ mod bugbite_presale {
 
     
 }
+
